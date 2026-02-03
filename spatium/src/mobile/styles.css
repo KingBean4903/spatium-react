@@ -1,0 +1,12 @@
+
+.mobile-container {
+								overflow: hidden;
+								width: 100vw;
+								background: yellow;
+								height: 100vh;
+								position: relative;
+}
+
+.btm-nav {
+							position: absolute;
+}

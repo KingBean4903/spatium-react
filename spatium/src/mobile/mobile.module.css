@@ -1,0 +1,27 @@
+
+.mobile_container {
+								overflow: hidden;
+								width: 100vw;
+								height: 100vh;
+								position: relative;
+								background: #f5f5f5;
+}
+
+.btm_nav {
+							position: absolute;
+       bottom: 1em;
+							width: 100%;
+}
+
+.btm_nav ul {
+								display: flex;
+								justify-content: space-between;
+								column-gap: .5em;
+								margin: .5em;
+								border-radius: .25em;
+								background: #fff;
+								font-size: .75em;
+								list-style: none;
+								text-transform: uppercase;
+								padding: 1em 1em;
+}

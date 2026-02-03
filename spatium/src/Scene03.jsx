@@ -130,8 +130,6 @@ function FirstPersonControls({ onLockChange, gltf, selectedMarker, isLocked, set
 																																																								doorCounter.current++;
 																																																} */
 
-
-
 																																																if (clickedMeshes.current.has(mesh)) {
 																																																								mesh.material.color.copy(clickedMeshes.current.get(mesh))
 																																																								clickedMeshes.current.delete(mesh);
@@ -226,7 +224,7 @@ function FirstPersonControls({ onLockChange, gltf, selectedMarker, isLocked, set
 																																selectedMarker.position.z
 																														);
 																														console.log('Navigated to:', selectedMarker.name);
-																								      camera.rotation.set(0, 0, 0)
+																								      // camera.rotation.set(0, 0, 0)
 																														setSelectedMarker(null); // Reset after navigation
 																}
 
@@ -262,13 +260,23 @@ function FirstPersonControls({ onLockChange, gltf, selectedMarker, isLocked, set
 																								if (box.containsPoint(newPosition)) {
 																																return true;
 																								}
-
 																}
-
 																return false;
 								}
 
 
+								function checkForInteractable(position, direction) {
+										const origin = position.clone();
+										origin.y = EYE_HEIGHT;
+										
+										raycaster.current.set(origin, direction);
+										raycaster.current.far = 3; // Check 3 units ahead
+										
+										const hits = raycaster.current.intersectObjects(colliders, true);
+										
+										// Return closest hit object
+										return hits.length > 0 ? hits[0].object : null;
+								}
 
 								useFrame((state, delta) => {
 
@@ -324,8 +332,8 @@ function FirstPersonControls({ onLockChange, gltf, selectedMarker, isLocked, set
 																if (!checkCollision(newPosition)) {
 																								camera.position.add(velocity.current)
 																} */									
-								
-								    camera.position.add(velocity.current)
+
+								     camera.position.add(velocity.current)
 																// Collision detection - Floor and Ceiling
 												if (camera.position.y < FLOOR_Y + EYE_HEIGHT) {
 														camera.position.y = FLOOR_Y + EYE_HEIGHT;

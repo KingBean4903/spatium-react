@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "default": "spatium-b61f3"
+  },
+  "targets": {
+    "spatium-b61f3": {
+      "hosting": {
+        "mobile": [
+          "spatium-b61f3"
+        ]
+      }
+    }
+  },
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}
