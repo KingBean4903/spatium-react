@@ -3,6 +3,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader';
 import { OrbitControls, useGLTF, Html, Center, PointerLockControls, useTexture } from '@react-three/drei'
+import nipplejs from 'nipplejs';
+
 import luxuryFile from '../assets/luxury.glb';
 import villaFile from '../assets/villa.glb';
 import modernApt from '../assets/apartment_floor_plan.glb';
@@ -15,7 +17,8 @@ function MobileFirstPersonControls({
 								meshComments, 
 								setMeshComments }) {
 
-							 const raycaster = useRef(new THREE.Raycaster());
+							 const raycaster   = useRef(new THREE.Raycaster());
+								const joystickRef = useRef(null);
 
 								const { camera } = useThree();
 								const velocity = useRef(new THREE.Vector3())
@@ -26,10 +29,6 @@ function MobileFirstPersonControls({
 								const FLOOR_Y = 0;
 								const CEILING_Y = 3;
 								const PLAYER_RADIUS = 0.3;
-
-								const [joystickActive, setJoystickActive] = useState(false);
-								const joystickCenter = useRef({ x: 0, y: 0 });
-								const joystickTouch = useRef(null);
 
 								const lookTouch = useRef(null);
 								const lastLookPos = useRef({ x: 0, y: 0 });
@@ -53,67 +52,78 @@ function MobileFirstPersonControls({
 								}, [gltf, camera])
 
 								useEffect(() => {
-																const handleTouchStart  = (e) => {
-																								Array.from(e.touches).forEach(touch => {
-																																const x = touch.clientX;
+																let joystick;
 
-																																if (x < window.innerWidth / 2) {
-																																								joystickTouch.current = touch.identifier;
-																																								joystickCenter.current = { x: touch.clientX, y: touch.clientY };
-																																								setJoystickActive(true);
-																																} else {
-																																								lookTouch.current = touch.identifier;
-																																								lastLookPos.current = { x: touch.clientX, y: touch.clientY };
-																																}
-																								});
+																if (joystickRef.current) {
+																								joystick = nipplejs.create({
+																																zone: joystickRef.current,
+																																mode: 'static',
+																																position: { left: '80px', bottom: '80px' },
+																																size: 100,
+																																threshold: 0.1,
+																																color: 'white'
+																								})
+																
+
+																joystick.on('move', (_, data) => {
+																								const max = 50;
+																								moveDirection.current.x = Math.max(-1, Math.min(1, data.vector.x))
+																								moveDirection.current.z = Math.max(-1, Math.min(1, data.vector.y))
+																})
+
+																joystick.on('end', () => {
+																								moveDirection.current.x = 0;
+																								moveDirection.current.z = 0;
+																});
+																}
+
+																return () => joystick?.destroy();
+								}, [])
+
+								useEffect(() => {
+
+																const handleTouchStart  = (e) => {
+																								const touch = Array.from(e.touches).find(
+																																t => t.clientX > window.innerWidth / 2
+																								)
+
+																								if (!touch)  return
+
+																								lookTouch.current = touch.identifier;
+																								lastLookPos.current = { x: touch.clientX, y: touch.clientY }
 																};
 
 																const handleTouchMove = (e) => {
+																								const touch = Array.from(e.touches).find(
+																																t => t.identifer === lookTouch.current
+																								)
 
-																								e.preventDefault();
+																								if (!touch) return
 
-																								Array.from(e.touches).forEach(touch => {
-																																if (touch.identifer === joystickTouch.current) {
-																																								const dx = touch.clientX - joystickCenter.current.x;
-																																								const dy = touch.clientY - joystickCenter.current.y;
+																								const dx = touch.clientX - lastLookPos.current.x;
+																								const dy = touch.clientY - lastLookPos.current.y;
 
-																																								const distance = Math.sqrt(dx * dx + dy * dy);
-																																								const maxDistance = 50;
+																								camera.rotation.order = 'XYZ';
+																								camera.rotation.y -= dx * 0.003;
+																								camera.rotation.x -= dy * 0.003;
 
-																																								moveDirection.current.x = Math.max(-1, Math.min(1, dx / maxDistance))
-																																								moveDirection.current.z = Math.max(-1, Math.min(1, dy / maxDistance))
-																																}
+																								camera.rotation.x = Math.max(
+																																-Math.PI / 2,
+																																Math.min(Math.PI / 2, camera.rotation.x)
+																								)
 
-																																if (touch.identifier === lookTouch.current) {
-
-																																								const dx = touch.clientX - lastLookPos.current.x;
-																																								const dy = touch.clientY - lastLookPos.current.y;
-
-																																								camera.rotation.y -= dx * 0.003;
-																																								camera.rotation.x -= dy * 0.003;
-																																								
-																																								camera.rotation.x =  Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-
-																																								lastLookPos.current = { x: touch.clientX, y: touch.clientY };
-																																}
-
-																								});
+																								lastLookPos.current = { x: touch.clientX, y: touch.clientY };
 																};
 
 																const handleTouchEnd = (e) => {
-																								Array.from(e.changedTouches).forEach(touch => {
-																																if (touch.identifier === joystickTouch.current) {
-																																								joystickTouch.current = null;
-																																								moveDirection.current = { x:  0, z: 0 };
-																																								setJoystickActive(false);
-																																}
-																																if (touch.identifier === lookTouch.current) {
+																								Array.from(e.changedTouches).forEach(t => {
+																																if (t.identifier === lookTouch.current) {
 																																								lookTouch.current = null;
 																																}
-																								});
+																								})
 																};
 
-																document.addEventListener('touchstart', handleTouchStart);
+																document.addEventListener('touchstart', handleTouchStart,  { passive: false });
 																document.addEventListener('touchmove', handleTouchMove, { passive: false });
 																document.addEventListener('touchend', handleTouchEnd);
 
@@ -122,7 +132,7 @@ function MobileFirstPersonControls({
 																								document.removeEventListener('touchmove', handleTouchMove);
 																								document.removeEventListener('touchend', handleTouchEnd);
 																}
-								}, [camera]);
+								}, []);
 
 								const checkCollision = (newPosition) => {
 																if (!colliders || colliders.length === 0) return false;
@@ -149,7 +159,7 @@ function MobileFirstPersonControls({
 												forward.normalize();
 												
 												const right = new THREE.Vector3();
-												right.crossVectors(camera.up, forward).normalize();
+												right.crossVectors(forward, camera.up).normalize();
 												
 												velocity.current.set(0, 0, 0);
 												velocity.current.addScaledVector(forward, -moveDirection.current.z * SPEED * delta);
@@ -163,6 +173,7 @@ function MobileFirstPersonControls({
 														camera.position.add(velocity.current);
 												}*/
 												
+														camera.position.add(velocity.current);
 								    // camera.position.add(velocity.current);
 																		// Simple direct movement test (ignore camera direction for now)
 																		if (moveDirection.current.x !== 0 || moveDirection.current.z !== 0) {
@@ -234,6 +245,33 @@ function MobileFirstPersonControls({
 																		</div>
 																</Html>
 														)} */}
+																<Html fullscreen>																	
+																								<div
+																								  ref={joystickRef}
+																										id="joystick-zone"
+																										style={{
+																												position: 'absolute',
+																												left: 0,
+																												bottom: 0,
+																												width: '40vw',
+																												height: '40vh',
+																												touchAction: 'none'
+																										}}
+																								/>
+
+																								<div
+																										style={{
+																												position: 'absolute',
+																												right: 0,
+																												top: 0,
+																												width: '60vw',
+																												height: '100vh',
+																												touchAction: 'none'
+																										}}
+																								/>
+																</Html>
+																		
+																		
 																{/* Add Comment Button */}
 														<Html fullscreen>
 																<button
